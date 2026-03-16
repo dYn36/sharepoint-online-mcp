@@ -3,6 +3,31 @@
  */
 
 import { z } from "zod";
+import { discoverTenantId } from "./auth.js";
+
+/**
+ * Parse a SharePoint URL into hostname and site path.
+ * @param {string} url - Full SharePoint URL
+ * @returns {{ hostname: string, sitePath: string }}
+ */
+export function parseSharePointUrl(url) {
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid SharePoint URL: ${url}`);
+  }
+
+  const hostname = parsed.hostname;
+  const segments = parsed.pathname.split("/").filter(Boolean);
+
+  let sitePath = "";
+  if (segments.length >= 2 && (segments[0] === "sites" || segments[0] === "teams")) {
+    sitePath = `${segments[0]}/${segments[1]}`;
+  }
+
+  return { hostname, sitePath };
+}
 
 // ─── Common Web Part Templates ───
 const WEB_PART_TEMPLATES = {
@@ -199,6 +224,36 @@ export function registerTools(server, client, auth) {
           },
         ],
       };
+    }
+  );
+
+  server.tool(
+    "connect_to_site",
+    "Connect to a SharePoint site from its URL. Automatically discovers the tenant and resolves the site. Use this as the starting point when a user provides a SharePoint URL.",
+    { url: z.string().url().describe("Full SharePoint site URL, e.g. https://contoso.sharepoint.com/sites/marketing") },
+    async ({ url }) => {
+      try {
+        const { hostname, sitePath } = parseSharePointUrl(url);
+        const tenantId = await discoverTenantId(hostname);
+        const site = await client.getSiteByUrl(hostname, sitePath);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              id: site.id,
+              name: site.displayName || site.name,
+              url: site.webUrl,
+              description: site.description,
+              tenantId,
+            }, null, 2)
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text", text: `Error connecting to site: ${error.message}` }],
+          isError: true,
+        };
+      }
     }
   );
 

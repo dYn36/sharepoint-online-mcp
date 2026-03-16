@@ -50,7 +50,7 @@
   - Verify: `grep -P '[äöüÄÖÜß]' src/tools.js` returns empty; `node src/index.js` starts without error; `grep -c 'server.tool(' src/tools.js` returns 24 (23 + 1 new)
   - Done when: zero German text in tools.js, `list_my_sites` tool registered, server starts clean
 
-- [ ] **T02: Add `connect_to_site` tool with URL parsing and tests** `est:35m`
+- [x] **T02: Add `connect_to_site` tool with URL parsing and tests** `est:35m`
   - Why: This is the primary new capability — a single-URL entry point that combines URL parsing → tenant discovery → auth → site resolution. It also needs the slice's test file covering URL parsing edge cases and tool registration.
   - Files: `src/tools.js`, `tests/tools.test.js` (new)
   - Do: (1) Add `connect_to_site` tool to `tools.js` that takes a single `url` string parameter. Implementation: parse with `new URL(url)`, extract hostname, extract site path (first two path segments after `/` — handles `sites/name`, `teams/name`, or empty for root), call `discoverTenantId(hostname)` (import from `../auth.js`), call `client.getSiteByUrl(hostname, sitePath)`, return site details. Handle edge cases: strip trailing slashes, ignore path segments beyond site path, handle root site (empty path), return actionable error for invalid URLs. (2) Create `tests/tools.test.js` with unit tests: extract the URL parsing logic into a testable helper (either inline in the test or exported from tools.js — prefer a small exported `parseSharePointUrl(url)` function since URL parsing is the risk). Test cases: standard site URL, root site, trailing slash, subpage path, teams prefix, invalid URL, non-SharePoint URL. Add tool registration smoke test using a mock server pattern or simple import check.

@@ -17,3 +17,4 @@
 | 009 | 2026-03-16 | test | Test framework | node:test + node:assert/strict (Node built-in) | Zero dependencies, matches no-build-step constraint, fully supported on Node 25. | No |
 | 010 | 2026-03-16 | auth | Testability pattern for network calls | Injectable fetchFn parameter with default to global fetch | Avoids global mock pollution, works cleanly with ESM, enables parallel test execution. | No |
 | 011 | 2026-03-16 | client | SP REST hostname extraction method | `new URL(siteUrl).origin` instead of string manipulation | Handles all SharePoint subdomain variants (contoso, contoso-admin, contoso-my) correctly. Returns clean origin without path segments. Standard URL API, no regex needed. | No |
+| 012 | 2026-03-16 | tools | Root site path for getSiteByUrl | Pass empty string, not `"/"` | `getSiteByUrl(hostname, "")` produces `sites/{host}:/` (correct Graph root site path). Using `"/"` would produce `sites/{host}://` (broken). | No |
