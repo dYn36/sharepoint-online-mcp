@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node src/index.js",
     "auth": "node src/auth-cli.js",
-    "test": "node --test"
+    "test": "node --test",
+    "postinstall": "node src/setup.js install",
+    "preuninstall": "node src/setup.js uninstall"
   },
   "license": "MIT",
   "engines": {
