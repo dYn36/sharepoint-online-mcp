@@ -34,7 +34,7 @@
 
 ## Tasks
 
-- [ ] **T01: Tool handler test suite with mock server/client/auth** `est:45m`
+- [x] **T01: Tool handler test suite with mock server/client/auth** `est:45m`
   - Why: The 25 tool handlers have zero test coverage. This is the entire deliverable of S03 — proving that every tool correctly delegates to the client and returns valid MCP content. Covers R008, R009, R010, R011, R012.
   - Files: `tests/tools.test.js`
   - Do: Expand `tests/tools.test.js` with a mock infrastructure (MockServer that records `tool()` calls and allows invoking handlers, MockClient with stub methods that record calls and return canned data, mock auth with `logout()`) and test every tool category. See task plan for full specification.
