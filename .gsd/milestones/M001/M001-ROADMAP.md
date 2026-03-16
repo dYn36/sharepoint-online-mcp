@@ -57,7 +57,7 @@ This milestone is complete only when all are true:
   > After this: Claude can search sites, resolve a site from URL with auto tenant discovery, list followed sites, and disconnect/reconnect — all via MCP tools against live SharePoint
 - [x] **S03: Tool Validation & Dual-Audience Tokens** `risk:medium` `depends:[S02]`
   > After this: All 20+ existing tools (pages, layout, web parts, navigation, branding) work with the new auth layer — both Graph API and SP REST API calls succeed with correct token audiences
-- [ ] **S04: npm Package & Polish** `risk:low` `depends:[S03]`
+- [x] **S04: npm Package & Polish** `risk:low` `depends:[S03]`
   > After this: `npx sharepoint-online-mcp` installs and runs cleanly, README documents zero-config workflow, error messages are actionable, package is publish-ready
 
 ## Boundary Map

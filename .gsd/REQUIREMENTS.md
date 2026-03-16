@@ -222,9 +222,18 @@
 | R012 | core-capability | validated | M001/S03 | none | S03 — 2 mock tests, branding tools delegate correctly |
 | R013 | launchability | active | M001/S04 | none | unmapped |
 | R014 | constraint | validated | M001/S01 | M001/S04 | S01 grep |
-| R015 | failure-visibility | active | M001/S04 | M001/S01 | unmapped |
+| R015 | failure-visibility | validated | M001/S04 | M001/S01 | S04 — 16 tests prove actionable error messages |
 | R016 | continuity | deferred | none | none | unmapped |
 | R017 | anti-feature | out-of-scope | none | none | n/a |
+| R018 | anti-feature | out-of-scope | none | none | n/a |
+
+## Coverage Summary
+
+- Active requirements: 9
+- Mapped to slices: 9
+- Validated: 6
+- Unmapped active requirements: 0
+pe | none | none | n/a |
 | R018 | anti-feature | out-of-scope | none | none | n/a |
 
 ## Coverage Summary

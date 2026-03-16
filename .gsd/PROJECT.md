@@ -10,7 +10,7 @@ A user runs `npx sharepoint-online-mcp` with zero configuration, authenticates v
 
 ## Current State
 
-Auth layer refactored to zero-config. Server starts with `node src/index.js` — no env vars, no config files. Uses Microsoft Office well-known client ID for device code flow authentication. Token caching to `~/.sharepoint-mcp-cache.json` for cross-restart persistence. Dual-audience token routing: Graph API and SP REST API get per-resource tokens. 25 MCP tools registered, all with English descriptions. Site discovery tools added: `connect_to_site` (URL → tenant discovery → site resolution), `list_my_sites` (followed sites). All 25 tools validated at contract level — 56 unit tests passing across 3 test files. npm packaging pending (S04).
+All four slices of M001 complete. Package is publish-ready: `npm pack` produces a clean 8-file, 12.1kB artifact. Server starts with `node src/index.js` — no env vars, no config files. Uses Microsoft Office well-known client ID for device code flow authentication. Token caching to `~/.sharepoint-mcp-cache.json` for cross-restart persistence. Dual-audience token routing: Graph API and SP REST API get per-resource tokens. 25 MCP tools registered, all with English descriptions. English README documents zero-config workflow with Claude Desktop config, all 25 tools, troubleshooting, and known limitations. Auth and API errors produce actionable guidance messages. 72 unit tests passing across 3 test files. Milestone-level live UAT against a real SharePoint tenant is the remaining validation step before npm publish.
 
 ## Architecture / Key Patterns
 
@@ -19,8 +19,8 @@ Auth layer refactored to zero-config. Server starts with `node src/index.js` —
 - **Auth:** MSAL Node (`@azure/msal-node`) with Device Code Flow
 - **API:** Microsoft Graph v1.0 + Beta for pages/layout, SharePoint REST API for navigation/branding
 - **Structure:**
-  - `src/auth.js` — MSAL wrapper, token cache, device code flow, tenant discovery
-  - `src/client.js` — Graph API + SP REST API client with per-resource token routing
+  - `src/auth.js` — MSAL wrapper, token cache, device code flow, tenant discovery, error wrapping (wrapAuthError)
+  - `src/client.js` — Graph API + SP REST API client with per-resource token routing, injectable fetchFn
   - `src/tools.js` — 25 MCP tool definitions (zod schemas + handlers), `parseSharePointUrl` export
   - `src/index.js` — Server entrypoint, stdio transport
   - `src/auth-cli.js` — Standalone auth test CLI
@@ -31,4 +31,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 ## Milestone Sequence
 
-- [ ] M001: Zero-Config SharePoint MCP — Refactor auth to zero-config, add site discovery, validate all tools, publish to npm as `sharepoint-online-mcp`
+- [ ] M001: Zero-Config SharePoint MCP — All slices complete (S01–S04). Pending: milestone-level live UAT, npm publish.
