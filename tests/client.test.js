@@ -32,6 +32,135 @@ function createMockFetch(body = {}) {
   });
 }
 
+/**
+ * Create a mock fetch that returns a configurable HTTP error response.
+ */
+function createErrorFetch(status, body = "") {
+  return async () => ({
+    ok: false,
+    status,
+    text: async () => body,
+  });
+}
+
+describe("SharePointClient error messages (Graph API via request())", () => {
+  it("401 → 'Authentication expired' guidance", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(401, "token expired") });
+
+    await assert.rejects(
+      () => client.graph("/me"),
+      (err) => {
+        assert.ok(err.message.includes("Authentication expired"), `expected 'Authentication expired', got: ${err.message}`);
+        assert.ok(err.message.includes("disconnect"), `expected 'disconnect' guidance, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  it("403 → 'Access denied' guidance with original body", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(403, "insufficient privileges") });
+
+    await assert.rejects(
+      () => client.graph("/me"),
+      (err) => {
+        assert.ok(err.message.includes("Access denied"), `expected 'Access denied', got: ${err.message}`);
+        assert.ok(err.message.includes("insufficient privileges"), `expected original body preserved, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  it("404 → 'Resource not found' guidance with original body", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(404, "item not found") });
+
+    await assert.rejects(
+      () => client.graph("/sites/nonexistent"),
+      (err) => {
+        assert.ok(err.message.includes("Resource not found"), `expected 'Resource not found', got: ${err.message}`);
+        assert.ok(err.message.includes("item not found"), `expected original body preserved, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  it("500 → generic 'SharePoint API error' with status and body", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(500, "internal server error") });
+
+    await assert.rejects(
+      () => client.graph("/me"),
+      (err) => {
+        assert.ok(err.message.startsWith("SharePoint API error"), `expected 'SharePoint API error', got: ${err.message}`);
+        assert.ok(err.message.includes("500"), `expected status code, got: ${err.message}`);
+        assert.ok(err.message.includes("internal server error"), `expected body, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+});
+
+describe("SharePointClient error messages (SP REST API via spRest())", () => {
+  it("401 → 'Authentication expired' guidance", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(401, "token expired") });
+
+    await assert.rejects(
+      () => client.spRest("https://contoso.sharepoint.com/sites/test", "web"),
+      (err) => {
+        assert.ok(err.message.includes("Authentication expired"), `expected 'Authentication expired', got: ${err.message}`);
+        assert.ok(err.message.includes("disconnect"), `expected 'disconnect' guidance, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  it("403 → 'Access denied' guidance with original body", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(403, "access denied by policy") });
+
+    await assert.rejects(
+      () => client.spRest("https://contoso.sharepoint.com/sites/test", "web"),
+      (err) => {
+        assert.ok(err.message.includes("Access denied"), `expected 'Access denied', got: ${err.message}`);
+        assert.ok(err.message.includes("access denied by policy"), `expected original body preserved, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  it("404 → 'Resource not found' guidance with original body", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(404, "list does not exist") });
+
+    await assert.rejects(
+      () => client.spRest("https://contoso.sharepoint.com/sites/test", "web/lists/getbytitle('Nonexistent')"),
+      (err) => {
+        assert.ok(err.message.includes("Resource not found"), `expected 'Resource not found', got: ${err.message}`);
+        assert.ok(err.message.includes("list does not exist"), `expected original body preserved, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+
+  it("500 → generic 'SharePoint API error' with status and body", async () => {
+    const mockAuth = createMockAuth();
+    const client = new SharePointClient(mockAuth, { fetchFn: createErrorFetch(500, "server error") });
+
+    await assert.rejects(
+      () => client.spRest("https://contoso.sharepoint.com/sites/test", "web"),
+      (err) => {
+        assert.ok(err.message.startsWith("SharePoint API error"), `expected 'SharePoint API error', got: ${err.message}`);
+        assert.ok(err.message.includes("500"), `expected status code, got: ${err.message}`);
+        assert.ok(err.message.includes("server error"), `expected body, got: ${err.message}`);
+        return true;
+      }
+    );
+  });
+});
+
 describe("SharePointClient token routing", () => {
   let originalFetch;
 

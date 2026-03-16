@@ -6,15 +6,21 @@
 import fetch from "node-fetch";
 
 export class SharePointClient {
-  constructor(auth) {
+  /**
+   * @param {object} auth - Auth provider with getAccessToken(resource)
+   * @param {object} [options]
+   * @param {Function} [options.fetchFn] - fetch implementation (injectable for testing)
+   */
+  constructor(auth, options = {}) {
     this.auth = auth;
     this.graphBase = "https://graph.microsoft.com/v1.0";
     this.graphBeta = "https://graph.microsoft.com/beta";
+    this._fetch = options.fetchFn || fetch;
   }
 
   async request(url, options = {}) {
     const token = await this.auth.getAccessToken("https://graph.microsoft.com");
-    const res = await fetch(url, {
+    const res = await this._fetch(url, {
       ...options,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -26,7 +32,10 @@ export class SharePointClient {
 
     if (!res.ok) {
       const errBody = await res.text();
-      throw new Error(`API ${res.status}: ${errBody}`);
+      if (res.status === 401) throw new Error("Authentication expired or revoked. Use the 'disconnect' tool to clear tokens and reconnect.");
+      if (res.status === 403) throw new Error(`Access denied: Your account may not have permission for this operation. (${errBody})`);
+      if (res.status === 404) throw new Error(`Resource not found: Verify the site URL and resource ID are correct. (${errBody})`);
+      throw new Error(`SharePoint API error ${res.status}: ${errBody}`);
     }
 
     const text = await res.text();
@@ -48,7 +57,7 @@ export class SharePointClient {
     const origin = new URL(siteUrl).origin;
     const token = await this.auth.getAccessToken(origin);
     const url = `${siteUrl}/_api/${apiPath}`;
-    const res = await fetch(url, {
+    const res = await this._fetch(url, {
       ...options,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -60,7 +69,10 @@ export class SharePointClient {
 
     if (!res.ok) {
       const errBody = await res.text();
-      throw new Error(`SP REST ${res.status}: ${errBody}`);
+      if (res.status === 401) throw new Error("Authentication expired or revoked. Use the 'disconnect' tool to clear tokens and reconnect.");
+      if (res.status === 403) throw new Error(`Access denied: Your account may not have permission for this operation. (${errBody})`);
+      if (res.status === 404) throw new Error(`Resource not found: Verify the site URL and resource ID are correct. (${errBody})`);
+      throw new Error(`SharePoint API error ${res.status}: ${errBody}`);
     }
 
     const text = await res.text();

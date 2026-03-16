@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 // We test the pure functions directly and the class construction.
 // MSAL is not mocked — we only test the non-MSAL surface of auth.js.
 
-import { discoverTenantId, buildScopes, SharePointAuth } from "../src/auth.js";
+import { discoverTenantId, buildScopes, SharePointAuth, wrapAuthError } from "../src/auth.js";
 
 // ── buildScopes ──────────────────────────────────────────────────────────────
 
@@ -146,5 +146,71 @@ describe("SharePointAuth", () => {
   it("exposes getAccessToken method", () => {
     const auth = new SharePointAuth();
     assert.strictEqual(typeof auth.getAccessToken, "function");
+  });
+});
+
+// ── wrapAuthError ────────────────────────────────────────────────────────────
+
+describe("wrapAuthError", () => {
+  it("Conditional Access AADSTS50076 → specific CA policy guidance", () => {
+    const error = new Error("AADSTS50076: some details about CA");
+    error.errorCode = "AADSTS50076";
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("Conditional Access"), `expected CA guidance, got: ${msg}`);
+    assert.ok(msg.includes("IT administrator"), `expected admin contact, got: ${msg}`);
+  });
+
+  it("Conditional Access AADSTS53003 → specific CA policy guidance", () => {
+    const error = new Error("AADSTS53003: blocked by CA");
+    error.errorCode = "AADSTS53003";
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("Conditional Access"), `expected CA guidance, got: ${msg}`);
+  });
+
+  it("AADSTS700016 → 'Application not recognized' guidance", () => {
+    const error = new Error("AADSTS700016: app not found");
+    error.errorCode = "AADSTS700016";
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("Application not recognized"), `expected app recognition error, got: ${msg}`);
+    assert.ok(msg.includes("report this issue"), `expected report guidance, got: ${msg}`);
+  });
+
+  it("AADSTS50059 → tenant not found guidance", () => {
+    const error = new Error("AADSTS50059: no tenant");
+    error.errorCode = "AADSTS50059";
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("Tenant not found"), `expected tenant guidance, got: ${msg}`);
+    assert.ok(msg.includes("SharePoint URL"), `expected URL check hint, got: ${msg}`);
+  });
+
+  it("other AADSTS codes → generic AADSTS message with code + disconnect hint", () => {
+    const error = new Error("AADSTS90002: something went wrong");
+    error.errorCode = "AADSTS90002";
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("AADSTS90002"), `expected code preserved, got: ${msg}`);
+    assert.ok(msg.includes("disconnect"), `expected disconnect guidance, got: ${msg}`);
+    assert.ok(msg.includes("something went wrong"), `expected original message preserved, got: ${msg}`);
+  });
+
+  it("AADSTS code in message only (no errorCode property) → still detected", () => {
+    const error = new Error("AADSTS50076: interaction required due to CA");
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("Conditional Access"), `expected CA guidance from message-only code, got: ${msg}`);
+  });
+
+  it("non-AADSTS error → generic failure with disconnect hint", () => {
+    const error = new Error("Network timeout");
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("Authentication failed"), `expected generic auth failure, got: ${msg}`);
+    assert.ok(msg.includes("Network timeout"), `expected original message, got: ${msg}`);
+    assert.ok(msg.includes("disconnect"), `expected disconnect guidance, got: ${msg}`);
+    assert.ok(!msg.includes("AADSTS"), `should not contain AADSTS code, got: ${msg}`);
+  });
+
+  it("error with empty message → graceful handling", () => {
+    const error = new Error("");
+    const msg = wrapAuthError(error);
+    assert.ok(msg.includes("Authentication failed"), `expected generic auth failure, got: ${msg}`);
+    assert.ok(msg.includes("disconnect"), `expected disconnect guidance, got: ${msg}`);
   });
 });

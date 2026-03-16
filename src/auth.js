@@ -12,6 +12,37 @@ import os from "os";
 const TOKEN_CACHE_PATH = path.join(os.homedir(), ".sharepoint-mcp-cache.json");
 
 /**
+ * Map MSAL / AADSTS errors to actionable user-facing messages.
+ * @param {Error} error - error from MSAL token acquisition
+ * @returns {string} - actionable error message
+ */
+export function wrapAuthError(error) {
+  const msg = error.message || "";
+  const code = error.errorCode || "";
+
+  // Check for specific AADSTS codes in either errorCode or message
+  const aadstsMatch = code.match(/AADSTS(\d+)/i) || msg.match(/AADSTS(\d+)/i);
+
+  if (aadstsMatch) {
+    const aadstsCode = `AADSTS${aadstsMatch[1]}`;
+
+    if (aadstsCode === "AADSTS50076" || aadstsCode === "AADSTS53003") {
+      return "Authentication blocked: Your organization's Conditional Access policy does not allow device code flow. Contact your IT administrator or try from a different network.";
+    }
+    if (aadstsCode === "AADSTS700016") {
+      return "Authentication error: Application not recognized. This is unexpected — please report this issue.";
+    }
+    if (aadstsCode === "AADSTS50059") {
+      return "Tenant not found: Could not find a Microsoft 365 tenant for this domain. Check that the SharePoint URL is correct.";
+    }
+
+    return `Authentication failed (${aadstsCode}): ${msg}. Try using the 'disconnect' tool and authenticating again.`;
+  }
+
+  return `Authentication failed: ${msg}. Try using the 'disconnect' tool and authenticating again.`;
+}
+
+/**
  * Microsoft Office well-known client ID.
  * Works with any Azure AD tenant — no app registration required.
  */
@@ -146,18 +177,23 @@ export class SharePointAuth {
     }
 
     // Device Code Flow - works without admin rights
-    const result = await this.pca.acquireTokenByDeviceCode({
-      scopes,
-      deviceCodeCallback: (response) => {
-        // In MCP stdio mode, write to stderr so it doesn't interfere with JSON-RPC protocol
-        process.stderr.write(
-          `\n🔐 SharePoint login required!\n` +
-            `   Open:  ${response.verificationUri}\n` +
-            `   Code:  ${response.userCode}\n` +
-            `   (Code expires in ${Math.round(response.expiresIn / 60)} minutes)\n\n`
-        );
-      },
-    });
+    let result;
+    try {
+      result = await this.pca.acquireTokenByDeviceCode({
+        scopes,
+        deviceCodeCallback: (response) => {
+          // In MCP stdio mode, write to stderr so it doesn't interfere with JSON-RPC protocol
+          process.stderr.write(
+            `\n🔐 SharePoint login required!\n` +
+              `   Open:  ${response.verificationUri}\n` +
+              `   Code:  ${response.userCode}\n` +
+              `   (Code expires in ${Math.round(response.expiresIn / 60)} minutes)\n\n`
+          );
+        },
+      });
+    } catch (error) {
+      throw new Error(wrapAuthError(error));
+    }
 
     this.account = result.account;
     return result.accessToken;
