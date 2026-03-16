@@ -10,7 +10,7 @@ A user runs `npx sharepoint-online-mcp` with zero configuration, authenticates v
 
 ## Current State
 
-Auth layer refactored to zero-config. Server starts with `node src/index.js` — no env vars, no config files. Uses Microsoft Office well-known client ID for device code flow authentication. Token caching to `~/.sharepoint-mcp-cache.json` for cross-restart persistence. Dual-audience token routing: Graph API and SP REST API get per-resource tokens. 25 MCP tools registered, all with English descriptions. Site discovery tools added: `connect_to_site` (URL → tenant discovery → site resolution), `list_my_sites` (followed sites). 25 unit tests passing across 3 test files. Tool validation against live SharePoint and npm packaging pending (S03–S04).
+Auth layer refactored to zero-config. Server starts with `node src/index.js` — no env vars, no config files. Uses Microsoft Office well-known client ID for device code flow authentication. Token caching to `~/.sharepoint-mcp-cache.json` for cross-restart persistence. Dual-audience token routing: Graph API and SP REST API get per-resource tokens. 25 MCP tools registered, all with English descriptions. Site discovery tools added: `connect_to_site` (URL → tenant discovery → site resolution), `list_my_sites` (followed sites). All 25 tools validated at contract level — 56 unit tests passing across 3 test files. npm packaging pending (S04).
 
 ## Architecture / Key Patterns
 

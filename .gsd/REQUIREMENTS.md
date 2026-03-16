@@ -81,57 +81,57 @@
 
 ### R008 — Page CRUD
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Create, read, update, publish, and delete SharePoint modern pages via MCP tools.
 - Why it matters: Pages are the primary content unit in SharePoint.
 - Source: user
 - Primary owning slice: M001/S03
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Already implemented in existing tools. Needs validation with new auth layer.
+- Validation: S03 — Contract-level: 7 mock tests prove list_pages, get_page, create_page, create_page+autoPublish, update_page, publish_page, delete_page all delegate correctly with valid MCP content shape. Live validation deferred to milestone UAT.
+- Notes: Already implemented in existing tools. Auth layer wiring validated via mock delegation.
 
 ### R009 — Canvas Layout Editing
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Add and configure page sections with various column layouts (full-width, 1-col, 2-col, 3-col, asymmetric).
 - Why it matters: Sections are the structural building blocks of SharePoint pages.
 - Source: user
 - Primary owning slice: M001/S03
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Already implemented. Needs validation.
+- Validation: S03 — Contract-level: 3 mock tests prove add_section (with template and emphasis) and get_page_layout delegate correctly. Live validation deferred to milestone UAT.
+- Notes: Already implemented. Auth layer wiring validated via mock delegation.
 
 ### R010 — Web Part Management
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Add text, image, spacer, divider, hero, quick links, and custom web parts to page sections.
 - Why it matters: Web parts are how content gets placed on SharePoint pages.
 - Source: user
 - Primary owning slice: M001/S03
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Already implemented. Needs validation.
+- Validation: S03 — Contract-level: 6 mock tests prove text, image, spacer, divider, custom webpart delegation and position shape. Live validation deferred to milestone UAT.
+- Notes: Already implemented. Auth layer wiring validated via mock delegation.
 
 ### R011 — Navigation Management
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Read and modify Quick Launch and Top Navigation bar entries on SharePoint sites.
 - Why it matters: Navigation is a core site design element.
 - Source: user
 - Primary owning slice: M001/S03
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Uses SP REST API (not Graph). Need to verify SP REST tokens work with well-known client ID.
+- Validation: S03 — Contract-level: 4 mock tests prove get quick nav, get top nav, add link, remove link all call SP REST client methods (not Graph). Live dual-audience token validation deferred to milestone UAT.
+- Notes: Uses SP REST API (not Graph). SP REST delegation path confirmed via mock tests.
 
 ### R012 — Branding (Logo, Asset Upload)
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Set site logo and upload assets (images, files) to Site Assets library.
 - Why it matters: Branding is part of the site design workflow.
 - Source: user
 - Primary owning slice: M001/S03
 - Supporting slices: none
-- Validation: unmapped
+- Validation: S03 — Contract-level: 2 mock tests prove set_site_logo and upload_asset delegate correctly, including base64-to-Buffer decode. Live validation deferred to milestone UAT.
 - Notes: Logo uses SP REST API. Upload uses Graph API.
 
 ### R013 — npm Package `sharepoint-online-mcp`
@@ -215,11 +215,11 @@
 | R005 | operability | active | M001/S01 | none | unmapped |
 | R006 | primary-user-loop | active | M001/S02 | none | S02 — tools registered, URL parsing tested |
 | R007 | primary-user-loop | active | M001/S02 | none | S02 — stateless siteId pattern, connect_to_site resolves any URL |
-| R008 | core-capability | active | M001/S03 | none | unmapped |
-| R009 | core-capability | active | M001/S03 | none | unmapped |
-| R010 | core-capability | active | M001/S03 | none | unmapped |
-| R011 | core-capability | active | M001/S03 | none | unmapped |
-| R012 | core-capability | active | M001/S03 | none | unmapped |
+| R008 | core-capability | validated | M001/S03 | none | S03 — 7 mock tests, all page tools delegate correctly |
+| R009 | core-capability | validated | M001/S03 | none | S03 — 3 mock tests, layout tools delegate correctly |
+| R010 | core-capability | validated | M001/S03 | none | S03 — 6 mock tests, all web part types delegate correctly |
+| R011 | core-capability | validated | M001/S03 | none | S03 — 4 mock tests, SP REST nav tools delegate correctly |
+| R012 | core-capability | validated | M001/S03 | none | S03 — 2 mock tests, branding tools delegate correctly |
 | R013 | launchability | active | M001/S04 | none | unmapped |
 | R014 | constraint | validated | M001/S01 | M001/S04 | S01 grep |
 | R015 | failure-visibility | active | M001/S04 | M001/S01 | unmapped |
@@ -229,7 +229,7 @@
 
 ## Coverage Summary
 
-- Active requirements: 14
-- Mapped to slices: 14
-- Validated: 1
+- Active requirements: 9
+- Mapped to slices: 9
+- Validated: 6
 - Unmapped active requirements: 0
