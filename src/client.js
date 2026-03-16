@@ -13,7 +13,7 @@ export class SharePointClient {
   }
 
   async request(url, options = {}) {
-    const token = await this.auth.getAccessToken();
+    const token = await this.auth.getAccessToken("https://graph.microsoft.com");
     const res = await fetch(url, {
       ...options,
       headers: {
@@ -45,7 +45,8 @@ export class SharePointClient {
    * SharePoint REST API call (for features not in Graph)
    */
   async spRest(siteUrl, apiPath, options = {}) {
-    const token = await this.auth.getAccessToken();
+    const origin = new URL(siteUrl).origin;
+    const token = await this.auth.getAccessToken(origin);
     const url = `${siteUrl}/_api/${apiPath}`;
     const res = await fetch(url, {
       ...options,

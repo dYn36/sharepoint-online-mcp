@@ -110,7 +110,7 @@ const TITLE_TEMPLATES = {
   },
 };
 
-export function registerTools(server, client) {
+export function registerTools(server, client, auth) {
   // ═══════════════════════════════════════════
   // SITE TOOLS
   // ═══════════════════════════════════════════
@@ -681,6 +681,27 @@ export function registerTools(server, client) {
               null,
               2
             ),
+          },
+        ],
+      };
+    }
+  );
+
+  // ═══════════════════════════════════════════
+  // AUTH / SESSION
+  // ═══════════════════════════════════════════
+
+  server.tool(
+    "disconnect",
+    "Disconnect from SharePoint and clear cached authentication. Use this to switch accounts or re-authenticate.",
+    {},
+    async () => {
+      await auth.logout();
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Disconnected. Authentication cache cleared. You will be prompted to re-authenticate on the next request.",
           },
         ],
       };

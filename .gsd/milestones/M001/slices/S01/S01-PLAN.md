@@ -50,7 +50,7 @@
   - Verify: `node --test tests/auth.test.js` — all tests pass
   - Done when: `auth.js` exports zero-config `SharePointAuth` class and `discoverTenantId` function, all unit tests pass
 
-- [ ] **T02: Wire dual-audience tokens through client and enable zero-config server startup** `est:45m`
+- [x] **T02: Wire dual-audience tokens through client and enable zero-config server startup** `est:45m`
   - Why: Completes the slice by connecting the new auth engine to the rest of the codebase. Without this, auth.js is refactored but the server still crashes on missing env vars.
   - Files: `src/client.js`, `src/index.js`, `src/tools.js`, `src/auth-cli.js`, `tests/client.test.js`, `package.json`
   - Do: (1) Update `client.js`: `request()` calls `this.auth.getAccessToken("https://graph.microsoft.com")`, `spRest()` extracts hostname from `siteUrl` param and calls `this.auth.getAccessToken("https://{hostname}")`. (2) Update `index.js`: remove `CLIENT_ID`/`TENANT_ID` env var reads and the error block, construct `new SharePointAuth()` with no args, update server description to English. (3) Add `disconnect` tool in `tools.js`: calls `auth.logout()`, returns confirmation. (4) Update `auth-cli.js` for zero-config. (5) Update `package.json`: name → `sharepoint-online-mcp`, add `dependencies` block with `@azure/msal-node`, `@modelcontextprotocol/sdk`, `node-fetch`, `zod`. (6) Write `tests/client.test.js`: verify `request()` passes Graph resource, `spRest()` passes SP resource (mock auth).
