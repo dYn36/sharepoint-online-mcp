@@ -71,6 +71,12 @@ The package needs to be publishable to npm so `npx sharepoint-online-mcp` works.
 - `npx .` starts server successfully
 - All 56 existing tests still pass
 
+## Observability Impact
+
+- **New signal:** `npm pack --dry-run` becomes the canonical check for package content — a future agent runs this to verify no dev artifacts leaked in.
+- **Inspection:** `ls -la src/index.js` confirms executable bit. `node -e "const p=JSON.parse(require('fs').readFileSync('package.json'));console.log(p.files,p.engines,p.license)"` dumps the three critical metadata fields.
+- **Failure state:** If `npx .` fails with `EACCES`, the executable bit is missing. If it fails with `ERR_MODULE_NOT_FOUND`, the `files` whitelist excluded a required source file.
+
 ## Verification
 
 ```bash

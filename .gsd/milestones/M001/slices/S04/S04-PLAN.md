@@ -39,7 +39,7 @@
 
 ## Tasks
 
-- [ ] **T01: Make package npm-publish-ready** `est:25m`
+- [x] **T01: Make package npm-publish-ready** `est:25m`
   - Why: R013 — `npx sharepoint-online-mcp` must install and run cleanly. Currently missing `files`, `engines`, `keywords`, `license`, `repository` in package.json. No LICENSE file. No `.npmignore`. `src/index.js` lacks executable permission.
   - Files: `package.json`, `LICENSE`, `.npmignore`, `src/index.js`
   - Do: Add `files: ["src/", "README.md", "LICENSE"]`, `engines: { node: ">=18" }`, `keywords`, `license: "MIT"`, `repository` to package.json. Create MIT LICENSE file (year 2026). Create `.npmignore` excluding tests/, .gsd/, .git/, node_modules/, .env. Run `chmod +x src/index.js`. Verify with `npm pack --dry-run` and `npx .`.
@@ -59,6 +59,15 @@
   - Do: In `src/auth.js` — wrap the device code flow error path to detect common AADSTS codes: `AADSTS50076`/`AADSTS53003` (Conditional Access — "Your organization blocks device code flow. Contact your IT admin or try from a different network."), `AADSTS700016` (app not found — should not happen with well-known client ID but defensive), `AADSTS50059` (no tenant found — "Could not find tenant. Check that the SharePoint URL is correct."), generic auth failure ("Authentication failed. Try running `disconnect` and authenticating again."). In `src/client.js` — enhance the two `throw new Error` lines: 401 → "Authentication expired or revoked. Use the `disconnect` tool and reconnect.", 403 → "Access denied. Your account may not have permission for this operation. Check site permissions.", 404 → "Resource not found. Verify the site URL and resource ID are correct.", keep existing format for other status codes but prefix with "SharePoint API error: ". Add tests for the new error message patterns — test that specific status codes produce the expected guidance strings.
   - Verify: `node --test tests/*.test.js` — all tests pass including new error message tests. `grep -c 'server.tool(' src/tools.js` still equals 25 (no tool changes).
   - Done when: Auth errors with known AADSTS codes and client errors with 401/403/404 produce actionable guidance messages. All tests pass.
+
+## Observability / Diagnostics
+
+- **Startup signal:** `npx sharepoint-online-mcp` emits `🚀 SharePoint Online MCP Server started (stdio)` on stderr — confirms bin entry, shebang, executable permission, and module resolution all work.
+- **Pack audit:** `npm pack --dry-run` lists every file that would be published — use to verify no secrets, tests, or dev artifacts leak into the package.
+- **Tool count invariant:** `grep -c 'server.tool(' src/tools.js` must equal 25. Any drift means tools were added/removed unintentionally.
+- **Test suite:** `node --test tests/*.test.js` — 56 tests covering auth, client, and tools. Run after any change to confirm regression.
+- **Error guidance:** After T03, auth and client errors include actionable user-facing messages. Inspect by grepping for known AADSTS codes or HTTP status codes in test output.
+- **Redaction:** No secrets in package artifacts. `.npmignore` and `files` whitelist prevent `.env` from being published.
 
 ## Files Likely Touched
 
