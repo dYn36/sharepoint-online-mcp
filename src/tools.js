@@ -135,7 +135,7 @@ const TITLE_TEMPLATES = {
   },
 };
 
-export function registerTools(server, client, auth) {
+export function registerTools(server, client, auth, overrides = {}) {
   // ═══════════════════════════════════════════
   // SITE TOOLS
   // ═══════════════════════════════════════════
@@ -234,7 +234,8 @@ export function registerTools(server, client, auth) {
     async ({ url }) => {
       try {
         const { hostname, sitePath } = parseSharePointUrl(url);
-        const tenantId = await discoverTenantId(hostname);
+        const _discoverTenantId = overrides.discoverTenantId || discoverTenantId;
+        const tenantId = await _discoverTenantId(hostname);
         const site = await client.getSiteByUrl(hostname, sitePath);
         return {
           content: [{

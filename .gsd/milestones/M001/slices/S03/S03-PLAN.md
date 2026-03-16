@@ -41,6 +41,15 @@
   - Verify: `node --test tests/*.test.js` passes all tests; `grep -c 'server.tool(' src/tools.js` = 25; `node src/index.js` starts clean
   - Done when: Every tool category (sites, pages, layout, web parts, navigation, branding, files, disconnect) has at least one passing test, error paths tested, total test count ≥ 30 new tests in tools.test.js
 
+## Observability / Diagnostics
+
+- **Test run signal:** `node --test tests/tools.test.js` — produces TAP output with pass/fail per handler. Zero infrastructure needed.
+- **Regression detection:** `node --test tests/*.test.js` — catches regressions across auth, client, and tools layers in one command.
+- **Tool count invariant:** `grep -c 'server.tool(' src/tools.js` — must remain 25. Drift means a tool was added/removed without test coverage.
+- **Startup health:** `node src/index.js` — prints `🚀 SharePoint Online MCP Server started (stdio)` on success. Any import or wiring error surfaces immediately.
+- **Mock call recording:** `MockClient.calls` array records `[methodName, ...args]` for every call, enabling future tests to assert delegation without live services.
+- **Error path coverage:** `connect_to_site` and `list_my_sites` handlers return `{ isError: true }` on failure — tests verify this shape explicitly.
+
 ## Files Likely Touched
 
 - `tests/tools.test.js`

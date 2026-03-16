@@ -204,3 +204,10 @@ node src/index.js                # starts without error
 
 - Modified: `src/tools.js` (2-line change: overrides parameter + discoverTenantId override)
 - Modified: `tests/tools.test.js` (expanded from ~39 lines to ~400+ lines with mock infra and 30+ tests)
+
+## Observability Impact
+
+- **New diagnostic surface:** `MockClient.calls` array pattern — any future test can inspect exact args passed to any client method.
+- **Test run signal:** `node --test tests/tools.test.js` — TAP output with per-handler pass/fail. A future agent can run this single command to verify all 25 tool handlers.
+- **Error shape visibility:** Error path tests assert `{ isError: true, content: [{ type: "text", text: "Error..." }] }` — this shape is now a tested contract, not just convention.
+- **Injection seam:** `overrides` parameter on `registerTools` — allows injecting any dependency (currently `discoverTenantId`) without modifying source internals. Visible in function signature.
