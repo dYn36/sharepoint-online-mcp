@@ -10,25 +10,25 @@ A user runs `npx sharepoint-online-mcp` with zero configuration, authenticates v
 
 ## Current State
 
-Existing prototype with 20+ MCP tools covering pages, canvas layout, web parts, navigation, branding, and asset upload. All tools use Microsoft Graph API (beta) and SharePoint REST API. Auth currently requires manual Azure AD app registration and env vars (`SHAREPOINT_CLIENT_ID`, `SHAREPOINT_TENANT_ID`). Needs to be refactored to zero-config auth with well-known client IDs and automatic tenant discovery.
+**M001 (Zero-Config SharePoint MCP) — complete.** All four slices delivered. The server starts with zero env vars, authenticates via device code using Microsoft Office's well-known client ID, auto-discovers tenant from SharePoint URLs, and routes dual-audience tokens to 25 MCP tools (pages, layout, web parts, navigation, branding, site discovery). Package is npm-publish-ready: `npm pack` produces a clean 8-file, 12.1kB artifact. 72 unit tests passing across 3 test files. All 15 in-scope requirements validated at contract level. Human UAT against a live SharePoint tenant is the remaining step before `npm publish`.
 
 ## Architecture / Key Patterns
 
 - **Runtime:** Node.js ESM, plain JavaScript (no TypeScript, no build step)
 - **Protocol:** MCP over stdio (`@modelcontextprotocol/sdk`)
-- **Auth:** MSAL Node (`@azure/msal-node`) with Device Code Flow
+- **Auth:** MSAL Node (`@azure/msal-node` ^5.1.0) with Device Code Flow, well-known client ID `d3590ed6-52b3-4102-aeff-aad2292ab01c`
 - **API:** Microsoft Graph v1.0 + Beta for pages/layout, SharePoint REST API for navigation/branding
 - **Structure:**
-  - `src/auth.js` — MSAL wrapper, token cache, device code flow
-  - `src/client.js` — Graph API + SP REST API client
-  - `src/tools.js` — 20+ MCP tool definitions (zod schemas + handlers)
+  - `src/auth.js` — MSAL wrapper, token cache, device code flow, tenant discovery, wrapAuthError
+  - `src/client.js` — Graph API + SP REST API client with per-resource token routing, injectable fetchFn
+  - `src/tools.js` — 25 MCP tool definitions (zod schemas + handlers), parseSharePointUrl export
   - `src/index.js` — Server entrypoint, stdio transport
   - `src/auth-cli.js` — Standalone auth test CLI
 
 ## Capability Contract
 
-See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement status, and coverage mapping.
+See `.gsd/REQUIREMENTS.md` for the explicit capability contract. All 15 in-scope requirements are validated. R016 (Conditional Access fallback) is deferred. R017-R018 are out of scope.
 
 ## Milestone Sequence
 
-- [ ] M001: Zero-Config SharePoint MCP — Refactor auth to zero-config, add site discovery, validate all tools, publish to npm as `sharepoint-online-mcp`
+- [x] M001: Zero-Config SharePoint MCP — Complete. All slices delivered (S01–S04). 72 tests passing. Package publish-ready. Human UAT pending.

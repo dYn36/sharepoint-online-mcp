@@ -3,6 +3,31 @@
  */
 
 import { z } from "zod";
+import { discoverTenantId } from "./auth.js";
+
+/**
+ * Parse a SharePoint URL into hostname and site path.
+ * @param {string} url - Full SharePoint URL
+ * @returns {{ hostname: string, sitePath: string }}
+ */
+export function parseSharePointUrl(url) {
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid SharePoint URL: ${url}`);
+  }
+
+  const hostname = parsed.hostname;
+  const segments = parsed.pathname.split("/").filter(Boolean);
+
+  let sitePath = "";
+  if (segments.length >= 2 && (segments[0] === "sites" || segments[0] === "teams")) {
+    sitePath = `${segments[0]}/${segments[1]}`;
+  }
+
+  return { hostname, sitePath };
+}
 
 // ─── Common Web Part Templates ───
 const WEB_PART_TEMPLATES = {
@@ -110,15 +135,15 @@ const TITLE_TEMPLATES = {
   },
 };
 
-export function registerTools(server, client) {
+export function registerTools(server, client, auth, overrides = {}) {
   // ═══════════════════════════════════════════
   // SITE TOOLS
   // ═══════════════════════════════════════════
 
   server.tool(
     "search_sites",
-    "Suche nach SharePoint-Sites anhand eines Suchbegriffs",
-    { query: z.string().describe("Suchbegriff für Sites") },
+    "Search for SharePoint sites by keyword",
+    { query: z.string().describe("Search term for sites") },
     async ({ query }) => {
       const sites = await client.listSites(query);
       return {
@@ -143,8 +168,8 @@ export function registerTools(server, client) {
 
   server.tool(
     "get_site_details",
-    "Zeigt Details einer SharePoint-Site (ID, URL, Beschreibung, Listen)",
-    { siteId: z.string().describe("Site-ID (z.B. 'contoso.sharepoint.com,guid,guid')") },
+    "Get details of a SharePoint site (ID, URL, description, lists)",
+    { siteId: z.string().describe("Site ID (e.g. 'contoso.sharepoint.com,guid,guid')") },
     async ({ siteId }) => {
       const [site, lists] = await Promise.all([
         client.getSite(siteId),
@@ -180,10 +205,10 @@ export function registerTools(server, client) {
 
   server.tool(
     "get_site_by_url",
-    "Findet eine Site anhand von Hostname und Pfad",
+    "Find a site by hostname and path",
     {
-      hostname: z.string().describe("z.B. 'contoso.sharepoint.com'"),
-      sitePath: z.string().describe("z.B. 'sites/marketing'"),
+      hostname: z.string().describe("e.g. 'contoso.sharepoint.com'"),
+      sitePath: z.string().describe("e.g. 'sites/marketing'"),
     },
     async ({ hostname, sitePath }) => {
       const site = await client.getSiteByUrl(hostname, sitePath);
@@ -202,13 +227,71 @@ export function registerTools(server, client) {
     }
   );
 
+  server.tool(
+    "connect_to_site",
+    "Connect to a SharePoint site from its URL. Automatically discovers the tenant and resolves the site. Use this as the starting point when a user provides a SharePoint URL.",
+    { url: z.string().url().describe("Full SharePoint site URL, e.g. https://contoso.sharepoint.com/sites/marketing") },
+    async ({ url }) => {
+      try {
+        const { hostname, sitePath } = parseSharePointUrl(url);
+        const _discoverTenantId = overrides.discoverTenantId || discoverTenantId;
+        const tenantId = await _discoverTenantId(hostname);
+        const site = await client.getSiteByUrl(hostname, sitePath);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              id: site.id,
+              name: site.displayName || site.name,
+              url: site.webUrl,
+              description: site.description,
+              tenantId,
+            }, null, 2)
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text", text: `Error connecting to site: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "list_my_sites",
+    "List SharePoint sites the current user follows",
+    {},
+    async () => {
+      try {
+        const sites = await client.listSites("");
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(sites.map(s => ({
+              id: s.id,
+              name: s.displayName || s.name,
+              url: s.webUrl,
+              description: s.description,
+            })), null, 2)
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text", text: `Error listing followed sites: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
   // ═══════════════════════════════════════════
   // PAGE TOOLS
   // ═══════════════════════════════════════════
 
   server.tool(
     "list_pages",
-    "Listet alle Seiten einer SharePoint-Site",
+    "List all pages of a SharePoint site",
     { siteId: z.string() },
     async ({ siteId }) => {
       const pages = await client.listPages(siteId);
@@ -236,10 +319,10 @@ export function registerTools(server, client) {
 
   server.tool(
     "get_page",
-    "Zeigt den vollständigen Inhalt einer Seite inkl. Canvas-Layout und Web Parts",
+    "Get the full content of a page including canvas layout and web parts",
     {
       siteId: z.string(),
-      pageId: z.string().describe("Page-ID"),
+      pageId: z.string().describe("Page ID"),
     },
     async ({ siteId, pageId }) => {
       const page = await client.getPage(siteId, pageId);
@@ -251,21 +334,21 @@ export function registerTools(server, client) {
 
   server.tool(
     "create_page",
-    "Erstellt eine neue SharePoint-Seite mit optionalem Layout und Title-Area-Template",
+    "Create a new SharePoint page with optional layout and title area template",
     {
       siteId: z.string(),
-      name: z.string().describe("Dateiname (z.B. 'about-us.aspx')"),
-      title: z.string().describe("Seitentitel"),
+      name: z.string().describe("File name (e.g. 'about-us.aspx')"),
+      title: z.string().describe("Page title"),
       layout: z
         .enum(["article", "home", "repostPage"])
         .optional()
-        .describe("Seitenlayout"),
+        .describe("Page layout"),
       titleLayout: z
         .enum(["plain", "imageAndTitle", "colorBlock", "overlap"])
         .optional()
-        .describe("Title-Area-Design"),
-      headerImageUrl: z.string().optional().describe("URL für Header-Bild"),
-      autoPublish: z.boolean().optional().describe("Sofort veröffentlichen?"),
+        .describe("Title area design"),
+      headerImageUrl: z.string().optional().describe("URL for header image"),
+      autoPublish: z.boolean().optional().describe("Publish immediately?"),
     },
     async ({ siteId, name, title, layout, titleLayout, headerImageUrl, autoPublish }) => {
       const titleArea = titleLayout
@@ -310,7 +393,7 @@ export function registerTools(server, client) {
 
   server.tool(
     "update_page",
-    "Aktualisiert Seiteneigenschaften (Titel, Title Area, etc.)",
+    "Update page properties (title, title area, etc.)",
     {
       siteId: z.string(),
       pageId: z.string(),
@@ -335,31 +418,31 @@ export function registerTools(server, client) {
 
       await client.updatePage(siteId, pageId, updates);
       return {
-        content: [{ type: "text", text: `✅ Seite ${pageId} aktualisiert.` }],
+        content: [{ type: "text", text: `Page ${pageId} updated.` }],
       };
     }
   );
 
   server.tool(
     "publish_page",
-    "Veröffentlicht eine Seite",
+    "Publish a page",
     { siteId: z.string(), pageId: z.string() },
     async ({ siteId, pageId }) => {
       await client.publishPage(siteId, pageId);
       return {
-        content: [{ type: "text", text: `✅ Seite ${pageId} veröffentlicht.` }],
+        content: [{ type: "text", text: `Page ${pageId} published.` }],
       };
     }
   );
 
   server.tool(
     "delete_page",
-    "Löscht eine Seite",
+    "Delete a page",
     { siteId: z.string(), pageId: z.string() },
     async ({ siteId, pageId }) => {
       await client.deletePage(siteId, pageId);
       return {
-        content: [{ type: "text", text: `🗑️ Seite ${pageId} gelöscht.` }],
+        content: [{ type: "text", text: `Page ${pageId} deleted.` }],
       };
     }
   );
@@ -370,7 +453,7 @@ export function registerTools(server, client) {
 
   server.tool(
     "add_section",
-    "Fügt einen neuen Abschnitt (Section) zu einer Seite hinzu",
+    "Add a new section to a page",
     {
       siteId: z.string(),
       pageId: z.string(),
@@ -379,11 +462,11 @@ export function registerTools(server, client) {
           "fullWidth", "oneColumn", "twoColumns", "twoColumnsLeft",
           "twoColumnsRight", "threeColumns", "oneThirdLeft", "oneThirdRight",
         ])
-        .describe("Layout-Template für die Section"),
+        .describe("Layout template for the section"),
       emphasis: z
         .enum(["none", "neutral", "soft", "strong"])
         .optional()
-        .describe("Hintergrund-Emphasis (Farbe/Kontrast)"),
+        .describe("Background emphasis (color/contrast)"),
     },
     async ({ siteId, pageId, sectionTemplate, emphasis }) => {
       const template = { ...SECTION_TEMPLATES[sectionTemplate] };
@@ -395,7 +478,7 @@ export function registerTools(server, client) {
           {
             type: "text",
             text: JSON.stringify(
-              { message: "✅ Section hinzugefügt", section },
+              { message: "Section added", section },
               null,
               2
             ),
@@ -407,7 +490,7 @@ export function registerTools(server, client) {
 
   server.tool(
     "get_page_layout",
-    "Zeigt das Canvas-Layout einer Seite (Sections, Columns, Web Parts)",
+    "Get the canvas layout of a page (sections, columns, web parts)",
     { siteId: z.string(), pageId: z.string() },
     async ({ siteId, pageId }) => {
       const [sections, webParts] = await Promise.all([
@@ -431,13 +514,13 @@ export function registerTools(server, client) {
 
   server.tool(
     "add_text_webpart",
-    "Fügt einen Text-Web-Part (HTML) in eine Sektion ein",
+    "Add a text web part (HTML) to a section",
     {
       siteId: z.string(),
       pageId: z.string(),
-      sectionIndex: z.number().describe("Section-Index (1-basiert)"),
-      columnIndex: z.number().describe("Column-Index (1-basiert)"),
-      html: z.string().describe("HTML-Inhalt (unterstützt <h2>, <p>, <ul>, <a>, <strong>, <em>, etc.)"),
+      sectionIndex: z.number().describe("Section index (1-based)"),
+      columnIndex: z.number().describe("Column index (1-based)"),
+      html: z.string().describe("HTML content (supports <h2>, <p>, <ul>, <a>, <strong>, <em>, etc.)"),
     },
     async ({ siteId, pageId, sectionIndex, columnIndex, html }) => {
       const webPart = WEB_PART_TEMPLATES.text(html);
@@ -446,7 +529,7 @@ export function registerTools(server, client) {
       );
       return {
         content: [
-          { type: "text", text: JSON.stringify({ message: "✅ Text hinzugefügt", id: result?.id }, null, 2) },
+          { type: "text", text: JSON.stringify({ message: "Text web part added", id: result?.id }, null, 2) },
         ],
       };
     }
@@ -454,13 +537,13 @@ export function registerTools(server, client) {
 
   server.tool(
     "add_image_webpart",
-    "Fügt ein Bild in eine Sektion ein",
+    "Add an image web part to a section",
     {
       siteId: z.string(),
       pageId: z.string(),
       sectionIndex: z.number(),
       columnIndex: z.number(),
-      imageUrl: z.string().describe("URL des Bildes"),
+      imageUrl: z.string().describe("Image URL"),
       altText: z.string().optional(),
       caption: z.string().optional(),
     },
@@ -471,7 +554,7 @@ export function registerTools(server, client) {
       );
       return {
         content: [
-          { type: "text", text: JSON.stringify({ message: "✅ Bild hinzugefügt", id: result?.id }, null, 2) },
+          { type: "text", text: JSON.stringify({ message: "Image web part added", id: result?.id }, null, 2) },
         ],
       };
     }
@@ -479,13 +562,13 @@ export function registerTools(server, client) {
 
   server.tool(
     "add_spacer",
-    "Fügt einen Abstandshalter (Spacer) ein",
+    "Add a spacer web part",
     {
       siteId: z.string(),
       pageId: z.string(),
       sectionIndex: z.number(),
       columnIndex: z.number(),
-      height: z.number().optional().describe("Höhe in Pixel (Standard: 60)"),
+      height: z.number().optional().describe("Height in pixels (default: 60)"),
     },
     async ({ siteId, pageId, sectionIndex, columnIndex, height }) => {
       const webPart = WEB_PART_TEMPLATES.spacer(height);
@@ -493,14 +576,14 @@ export function registerTools(server, client) {
         siteId, pageId, { sectionIndex, columnIndex }, webPart
       );
       return {
-        content: [{ type: "text", text: "✅ Spacer hinzugefügt" }],
+        content: [{ type: "text", text: "Spacer added" }],
       };
     }
   );
 
   server.tool(
     "add_divider",
-    "Fügt eine horizontale Trennlinie ein",
+    "Add a horizontal divider",
     {
       siteId: z.string(),
       pageId: z.string(),
@@ -513,20 +596,20 @@ export function registerTools(server, client) {
         siteId, pageId, { sectionIndex, columnIndex }, webPart
       );
       return {
-        content: [{ type: "text", text: "✅ Trennlinie hinzugefügt" }],
+        content: [{ type: "text", text: "Divider added" }],
       };
     }
   );
 
   server.tool(
     "add_custom_webpart",
-    "Fügt einen beliebigen Web Part per JSON-Definition ein (für fortgeschrittene Nutzer)",
+    "Add a custom web part from a JSON definition (advanced)",
     {
       siteId: z.string(),
       pageId: z.string(),
       sectionIndex: z.number(),
       columnIndex: z.number(),
-      webPartJson: z.string().describe("Web Part JSON als String"),
+      webPartJson: z.string().describe("Web part JSON as string"),
     },
     async ({ siteId, pageId, sectionIndex, columnIndex, webPartJson }) => {
       const webPart = JSON.parse(webPartJson);
@@ -535,7 +618,7 @@ export function registerTools(server, client) {
       );
       return {
         content: [
-          { type: "text", text: JSON.stringify({ message: "✅ Web Part hinzugefügt", id: result?.id }, null, 2) },
+          { type: "text", text: JSON.stringify({ message: "Web part added", id: result?.id }, null, 2) },
         ],
       };
     }
@@ -547,10 +630,10 @@ export function registerTools(server, client) {
 
   server.tool(
     "get_navigation",
-    "Zeigt die Navigation einer Site (Quick Launch oder Top Nav)",
+    "Get site navigation (Quick Launch or Top Navigation)",
     {
-      siteUrl: z.string().describe("Volle Site-URL, z.B. 'https://contoso.sharepoint.com/sites/marketing'"),
-      navType: z.enum(["quick", "top"]).describe("Navigationstyp"),
+      siteUrl: z.string().describe("Full site URL, e.g. 'https://contoso.sharepoint.com/sites/marketing'"),
+      navType: z.enum(["quick", "top"]).describe("Navigation type"),
     },
     async ({ siteUrl, navType }) => {
       const nav =
@@ -565,34 +648,34 @@ export function registerTools(server, client) {
 
   server.tool(
     "add_navigation_link",
-    "Fügt einen Navigationslink hinzu (Quick Launch oder Top Nav)",
+    "Add a navigation link (Quick Launch or Top Navigation)",
     {
       siteUrl: z.string(),
       navType: z.enum(["quick", "top"]),
-      title: z.string().describe("Anzeigename"),
-      url: z.string().describe("Link-URL"),
-      isExternal: z.boolean().optional().describe("Externer Link?"),
+      title: z.string().describe("Display name"),
+      url: z.string().describe("Link URL"),
+      isExternal: z.boolean().optional().describe("External link?"),
     },
     async ({ siteUrl, navType, title, url, isExternal }) => {
       await client.addNavigationNode(siteUrl, navType, { title, url, isExternal });
       return {
-        content: [{ type: "text", text: `✅ Navigation "${title}" hinzugefügt` }],
+        content: [{ type: "text", text: `Navigation link "${title}" added` }],
       };
     }
   );
 
   server.tool(
     "remove_navigation_link",
-    "Entfernt einen Navigationslink",
+    "Remove a navigation link",
     {
       siteUrl: z.string(),
       navType: z.enum(["quick", "top"]),
-      nodeId: z.number().describe("ID des Nav-Knotens"),
+      nodeId: z.number().describe("Navigation node ID"),
     },
     async ({ siteUrl, navType, nodeId }) => {
       await client.deleteNavigationNode(siteUrl, navType, nodeId);
       return {
-        content: [{ type: "text", text: `🗑️ Navigation ${nodeId} entfernt` }],
+        content: [{ type: "text", text: `Navigation link ${nodeId} removed` }],
       };
     }
   );
@@ -603,27 +686,27 @@ export function registerTools(server, client) {
 
   server.tool(
     "set_site_logo",
-    "Setzt das Logo einer SharePoint-Site",
+    "Set a SharePoint site logo",
     {
-      siteUrl: z.string().describe("Volle Site-URL"),
-      logoUrl: z.string().describe("URL zum Logo-Bild"),
+      siteUrl: z.string().describe("Full site URL"),
+      logoUrl: z.string().describe("URL of the logo image"),
     },
     async ({ siteUrl, logoUrl }) => {
       await client.setSiteLogo(siteUrl, logoUrl);
       return {
-        content: [{ type: "text", text: "✅ Site-Logo aktualisiert" }],
+        content: [{ type: "text", text: "Site logo updated" }],
       };
     }
   );
 
   server.tool(
     "upload_asset",
-    "Lädt eine Datei (Bild, CSS, etc.) in die Site Assets hoch",
+    "Upload a file (image, CSS, etc.) to Site Assets",
     {
       siteId: z.string(),
-      fileName: z.string().describe("Dateiname z.B. 'hero-banner.jpg'"),
-      folder: z.string().optional().describe("Ordnerpfad (Standard: 'SiteAssets')"),
-      base64Content: z.string().describe("Base64-kodierter Dateiinhalt"),
+      fileName: z.string().describe("File name, e.g. 'hero-banner.jpg'"),
+      folder: z.string().optional().describe("Folder path (default: 'SiteAssets')"),
+      base64Content: z.string().describe("Base64-encoded file content"),
     },
     async ({ siteId, fileName, folder, base64Content }) => {
       const buffer = Buffer.from(base64Content, "base64");
@@ -634,7 +717,7 @@ export function registerTools(server, client) {
           {
             type: "text",
             text: JSON.stringify(
-              { message: "✅ Datei hochgeladen", webUrl: result.webUrl, id: result.id },
+              { message: "File uploaded", webUrl: result.webUrl, id: result.id },
               null,
               2
             ),
@@ -650,7 +733,7 @@ export function registerTools(server, client) {
 
   server.tool(
     "get_design_templates",
-    "Zeigt verfügbare Design-Templates für Sections, Title Areas und Web Parts",
+    "Get available design templates for sections, title areas, and web parts",
     {},
     async () => {
       return {
@@ -662,25 +745,46 @@ export function registerTools(server, client) {
                 sectionLayouts: Object.keys(SECTION_TEMPLATES),
                 titleAreaLayouts: Object.keys(TITLE_TEMPLATES),
                 webPartTypes: [
-                  "text (HTML-Inhalt)",
-                  "image (Bild mit Alt-Text und Caption)",
-                  "hero (Hero-Banner mit Items)",
-                  "quickLinks (Link-Sammlung)",
-                  "spacer (Abstandshalter)",
-                  "divider (Trennlinie)",
-                  "custom (beliebiger Web Part per JSON)",
+                  "text (HTML content)",
+                  "image (image with alt text and caption)",
+                  "hero (hero banner with items)",
+                  "quickLinks (link collection)",
+                  "spacer (whitespace)",
+                  "divider (horizontal rule)",
+                  "custom (any web part via JSON)",
                 ],
                 sectionEmphasis: ["none", "neutral", "soft", "strong"],
                 tips: [
-                  "Verwende 'overlap' oder 'imageAndTitle' für Title Areas mit visuell ansprechendem Header",
-                  "Nutze 'strong' Emphasis für farbige Sections als visuelle Akzente",
-                  "Kombiniere verschiedene Column-Layouts für abwechslungsreiches Design",
-                  "Nutze Spacer zwischen Sections für Whitespace",
+                  "Use 'overlap' or 'imageAndTitle' for visually appealing title area headers",
+                  "Use 'strong' emphasis for colored sections as visual accents",
+                  "Combine different column layouts for varied design",
+                  "Use spacers between sections for whitespace",
                 ],
               },
               null,
               2
             ),
+          },
+        ],
+      };
+    }
+  );
+
+  // ═══════════════════════════════════════════
+  // AUTH / SESSION
+  // ═══════════════════════════════════════════
+
+  server.tool(
+    "disconnect",
+    "Disconnect from SharePoint and clear cached authentication. Use this to switch accounts or re-authenticate.",
+    {},
+    async () => {
+      await auth.logout();
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Disconnected. Authentication cache cleared. You will be prompted to re-authenticate on the next request.",
           },
         ],
       };

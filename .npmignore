@@ -1,0 +1,9 @@
+tests/
+.gsd/
+.git/
+.gitignore
+.npmignore
+.env
+.env.*
+node_modules/
+*.test.js

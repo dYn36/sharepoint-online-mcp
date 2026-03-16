@@ -51,13 +51,13 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Zero-Config Auth Engine** `risk:high` `depends:[]`
+- [x] **S01: Zero-Config Auth Engine** `risk:high` `depends:[]`
   > After this: Server starts without env vars, device code authenticates against a real tenant using well-known client ID, token is cached, Graph API call succeeds — proven against live Azure AD
-- [ ] **S02: Site Discovery & Connection Tools** `risk:medium` `depends:[S01]`
+- [x] **S02: Site Discovery & Connection Tools** `risk:medium` `depends:[S01]`
   > After this: Claude can search sites, resolve a site from URL with auto tenant discovery, list followed sites, and disconnect/reconnect — all via MCP tools against live SharePoint
-- [ ] **S03: Tool Validation & Dual-Audience Tokens** `risk:medium` `depends:[S02]`
+- [x] **S03: Tool Validation & Dual-Audience Tokens** `risk:medium` `depends:[S02]`
   > After this: All 20+ existing tools (pages, layout, web parts, navigation, branding) work with the new auth layer — both Graph API and SP REST API calls succeed with correct token audiences
-- [ ] **S04: npm Package & Polish** `risk:low` `depends:[S03]`
+- [x] **S04: npm Package & Polish** `risk:low` `depends:[S03]`
   > After this: `npx sharepoint-online-mcp` installs and runs cleanly, README documents zero-config workflow, error messages are actionable, package is publish-ready
 
 ## Boundary Map
