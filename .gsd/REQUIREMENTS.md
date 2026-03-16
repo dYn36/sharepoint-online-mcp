@@ -147,13 +147,13 @@
 
 ### R014 — No Hardcoded Secrets
 - Class: constraint
-- Status: active
+- Status: validated
 - Description: No tenant IDs, client IDs, or secrets hardcoded in source or config files. All sensitive values are well-known public constants or derived at runtime.
 - Why it matters: Reusability across tenants and users. Security.
 - Source: user
 - Primary owning slice: M001/S01
 - Supporting slices: M001/S04
-- Validation: unmapped
+- Validation: S01 — grep confirms zero process.env.SHAREPOINT references in src/. Well-known client ID is a public Microsoft constant.
 - Notes: Well-known client IDs are public and documented by Microsoft — they are constants, not secrets.
 
 ### R015 — Clear Error Messages
@@ -221,7 +221,7 @@
 | R011 | core-capability | active | M001/S03 | none | unmapped |
 | R012 | core-capability | active | M001/S03 | none | unmapped |
 | R013 | launchability | active | M001/S04 | none | unmapped |
-| R014 | constraint | active | M001/S01 | M001/S04 | unmapped |
+| R014 | constraint | validated | M001/S01 | M001/S04 | S01 grep |
 | R015 | failure-visibility | active | M001/S04 | M001/S01 | unmapped |
 | R016 | continuity | deferred | none | none | unmapped |
 | R017 | anti-feature | out-of-scope | none | none | n/a |
@@ -229,7 +229,7 @@
 
 ## Coverage Summary
 
-- Active requirements: 15
-- Mapped to slices: 15
-- Validated: 0
+- Active requirements: 14
+- Mapped to slices: 14
+- Validated: 1
 - Unmapped active requirements: 0

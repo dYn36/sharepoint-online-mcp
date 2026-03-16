@@ -10,7 +10,7 @@ A user runs `npx sharepoint-online-mcp` with zero configuration, authenticates v
 
 ## Current State
 
-Existing prototype with 20+ MCP tools covering pages, canvas layout, web parts, navigation, branding, and asset upload. All tools use Microsoft Graph API (beta) and SharePoint REST API. Auth currently requires manual Azure AD app registration and env vars (`SHAREPOINT_CLIENT_ID`, `SHAREPOINT_TENANT_ID`). Needs to be refactored to zero-config auth with well-known client IDs and automatic tenant discovery.
+Auth layer refactored to zero-config. Server starts with `node src/index.js` — no env vars, no config files. Uses Microsoft Office well-known client ID for device code flow authentication. Token caching to `~/.sharepoint-mcp-cache.json` for cross-restart persistence. Dual-audience token routing: Graph API and SP REST API get per-resource tokens. 18 unit tests passing. Disconnect MCP tool available. Package renamed to `sharepoint-online-mcp` with all runtime dependencies declared. Site discovery tools and full tool validation pending (S02-S03).
 
 ## Architecture / Key Patterns
 
