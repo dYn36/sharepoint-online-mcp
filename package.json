@@ -1,0 +1,14 @@
+{
+  "name": "sharepoint-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for SharePoint Online - Site Design & Editing",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "sharepoint-mcp": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "auth": "node src/auth-cli.js"
+  }
+}
