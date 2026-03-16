@@ -46,7 +46,7 @@
   - Verify: `npm pack --dry-run` shows only intended files. `npx . 2>&1 | head -1` shows startup message. `node --test tests/*.test.js` still passes all 56 tests.
   - Done when: `npm pack --dry-run` includes only `src/`, `README.md`, `LICENSE`, `package.json` and `npx .` starts the server.
 
-- [ ] **T02: Rewrite README for zero-config workflow** `est:30m`
+- [x] **T02: Rewrite README for zero-config workflow** `est:30m`
   - Why: R013 (documentation for npm package), partially R015 (troubleshooting). README is entirely in German and documents the old Azure app registration + env var workflow, which is now wrong. Users need English docs showing the zero-config flow.
   - Files: `README.md`
   - Do: Full rewrite in English. Structure: title + one-liner, quick start (`npx sharepoint-online-mcp` + Claude Desktop JSON config with no env vars), how it works (device code flow, auto tenant discovery, token caching), tool reference table (all 25 tools organized by category with actual names from `src/tools.js`: `search_sites`, `get_site_details`, `get_site_by_url`, `connect_to_site`, `list_my_sites`, `list_pages`, `get_page`, `create_page`, `update_page`, `publish_page`, `delete_page`, `add_section`, `get_page_layout`, `add_text_webpart`, `add_image_webpart`, `add_spacer`, `add_divider`, `add_custom_webpart`, `get_navigation`, `add_navigation_link`, `remove_navigation_link`, `set_site_logo`, `upload_asset`, `get_design_templates`, `disconnect`), known limitations (Conditional Access blocking, requires Node >= 18), troubleshooting section (common errors + what to do). No Azure app registration steps — the whole point is zero-config.

@@ -113,6 +113,12 @@ The README is entirely in German and documents the old workflow (Azure AD app re
 - No German text anywhere
 - All 25 tool names present and correct
 
+## Observability Impact
+
+- **README accuracy signal:** `grep -c` for all 25 tool names against `src/tools.js` — detects drift if tools are added/removed later. Run after any tool registration change.
+- **No stale references:** `grep -i "SHAREPOINT_TENANT_ID\|AZURE_CLIENT_ID\|\.env"` against README should always return 0 matches. Any match means old config leaked back in.
+- **Language check:** `grep -i` with German keyword list against README catches accidental German re-introduction (note: "Branding" is a false positive — it's an English category label).
+
 ## Verification
 
 ```bash
