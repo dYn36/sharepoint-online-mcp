@@ -4,79 +4,79 @@
 
 ### R001 — Zero-config Auth via Well-Known Client ID
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Server authenticates using a pre-registered Microsoft first-party client ID (e.g. Microsoft Office `d3590ed6-52b3-4102-aeff-aad2292ab01c`). No Azure Portal, no app registration, no env vars required.
 - Why it matters: The entire zero-config promise depends on this. Without it, every user needs Azure AD admin access.
 - Source: user
 - Primary owning slice: M001/S01
 - Supporting slices: none
-- Validation: unmapped
+- Validation: M001 — auth.js hardcodes Office client ID, zero constructor args, 3 unit tests. Server starts without env vars. Live tenant proof requires human UAT.
 - Notes: Risk — some tenants may block device code flow via Conditional Access. Well-known client IDs may not have all required Graph scopes pre-consented.
 
 ### R002 — Auto Tenant Discovery from SharePoint URL
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: Given a SharePoint URL like `https://contoso.sharepoint.com/sites/marketing`, the server automatically discovers the tenant ID via OpenID configuration endpoint — no manual tenant ID entry.
 - Why it matters: Eliminates the need for users to know or configure their tenant ID.
 - Source: user
 - Primary owning slice: M001/S01
 - Supporting slices: none
-- Validation: unmapped
+- Validation: M001 — discoverTenantId implemented with 6 mock-fetch tests. connect_to_site chains URL→tenant discovery→site resolution. Live proof requires human UAT.
 - Notes: Derive domain from URL, hit `https://login.microsoftonline.com/{domain}/.well-known/openid-configuration`, extract tenant ID from token endpoint.
 
 ### R003 — Device Code Flow Authentication
 - Class: primary-user-loop
-- Status: active
+- Status: validated
 - Description: User authenticates by opening a URL and entering a code — no browser redirect, no localhost callback. Device code prompt appears on stderr (MCP stdio compatible).
 - Why it matters: Device code flow works in headless/CLI environments where redirect-based auth doesn't.
 - Source: user
 - Primary owning slice: M001/S01
 - Supporting slices: none
-- Validation: unmapped
+- Validation: M001 — implemented in auth.js with English stderr prompt. Code path unit tested. Live flow requires human interaction.
 - Notes: Already partially implemented in existing auth.js.
 
 ### R004 — Token Caching with Silent Renewal
 - Class: quality-attribute
-- Status: active
+- Status: validated
 - Description: Access tokens are cached locally. On subsequent requests, tokens are acquired silently from cache without re-prompting. Cache persists across server restarts.
 - Why it matters: Without caching, every server restart requires re-authentication.
 - Source: inferred
 - Primary owning slice: M001/S01
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Already partially implemented. Cache path: `~/.sharepoint-mcp-cache.json`.
+- Validation: M001 — MSAL cache plugin configured for ~/.sharepoint-mcp-cache.json. Silent renewal code path exists. Cross-restart persistence requires human UAT.
+- Notes: Cache path: `~/.sharepoint-mcp-cache.json`.
 
 ### R005 — Logout/Disconnect Tool
 - Class: operability
-- Status: active
+- Status: validated
 - Description: An MCP tool `disconnect` clears the token cache and allows re-authentication with a different account.
 - Why it matters: Users need to switch accounts or re-auth when tokens are invalid.
 - Source: user
 - Primary owning slice: M001/S01
 - Supporting slices: none
-- Validation: unmapped
+- Validation: M001 — disconnect tool registered in S01, handler tested in S03 (calls auth.logout(), returns confirmation).
 - Notes: none
 
 ### R006 — Interactive Site Discovery via MCP Tools
 - Class: primary-user-loop
-- Status: active
+- Status: validated
 - Description: Claude can search for SharePoint sites the user has access to, list followed sites, and resolve a site from its URL — all via MCP tools.
 - Why it matters: Users shouldn't need to know site IDs. Discovery is the first step of every workflow.
 - Source: user
 - Primary owning slice: M001/S02
 - Supporting slices: none
-- Validation: S02 — `connect_to_site` tool registered and tested (URL parsing 7/7 tests), `list_my_sites` tool registered, `search_sites` pre-existing. Live validation deferred to milestone UAT.
+- Validation: M001 — connect_to_site, list_my_sites, search_sites registered and tested (7 URL parsing + 5 handler mock tests).
 - Notes: `connect_to_site` chains URL parsing → tenant discovery → auth → site resolution. `list_my_sites` calls `/me/followedSites`. `search_sites` was already present.
 
 ### R007 — Multi-Site Support
 - Class: primary-user-loop
-- Status: active
+- Status: validated
 - Description: Users can work with multiple SharePoint sites in a single session — switching between sites without reconnecting.
 - Why it matters: Many users manage multiple sites. Session-locked single-site would be limiting.
 - Source: user
 - Primary owning slice: M001/S02
 - Supporting slices: none
-- Validation: S02 — `connect_to_site` resolves any site by URL without session state; all tools accept siteId as parameter. Live multi-site validation deferred to milestone UAT.
+- Validation: M001 — connect_to_site resolves any URL without session state. All tools accept siteId as parameter. Contract-tested in S03.
 - Notes: No "current site" concept — each tool call takes siteId explicitly. `connect_to_site` returns siteId for use in downstream calls.
 
 ### R008 — Page CRUD
@@ -136,14 +136,14 @@
 
 ### R013 — npm Package `sharepoint-online-mcp`
 - Class: launchability
-- Status: active
+- Status: validated
 - Description: Published as npm package. `npx sharepoint-online-mcp` starts the server immediately. Correct bin entry, shebang, dependencies.
 - Why it matters: Zero-config means zero-setup. npm is the distribution mechanism.
 - Source: user
 - Primary owning slice: M001/S04
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Package name: `sharepoint-online-mcp`.
+- Validation: M001 — npm pack --dry-run produces clean 8-file, 12.1kB artifact. Server starts via node src/index.js. bin, engines, files, keywords, license, repository all set.
+- Notes: Package name: `sharepoint-online-mcp`. Not yet published — manual step after human UAT.
 
 ### R014 — No Hardcoded Secrets
 - Class: constraint
@@ -158,13 +158,13 @@
 
 ### R015 — Clear Error Messages
 - Class: failure-visibility
-- Status: active
+- Status: validated
 - Description: Auth failures, permission errors, and API errors produce actionable messages explaining what went wrong and what the user can do.
 - Why it matters: Zero-config means users can't debug via configuration. Error messages are the only diagnostic surface.
 - Source: inferred
 - Primary owning slice: M001/S04
 - Supporting slices: M001/S01
-- Validation: unmapped
+- Validation: M001 — wrapAuthError maps AADSTS50076/53003/700016/50059 to targeted messages. Client maps 401/403/404 to actionable guidance. 16 unit tests prove error paths.
 - Notes: Especially important for Conditional Access blocks, consent failures, and scope issues.
 
 ## Deferred
@@ -208,37 +208,29 @@
 
 | ID | Class | Status | Primary owner | Supporting | Proof |
 |---|---|---|---|---|---|
-| R001 | core-capability | active | M001/S01 | none | unmapped |
-| R002 | core-capability | active | M001/S01 | none | unmapped |
-| R003 | primary-user-loop | active | M001/S01 | none | unmapped |
-| R004 | quality-attribute | active | M001/S01 | none | unmapped |
-| R005 | operability | active | M001/S01 | none | unmapped |
-| R006 | primary-user-loop | active | M001/S02 | none | S02 — tools registered, URL parsing tested |
-| R007 | primary-user-loop | active | M001/S02 | none | S02 — stateless siteId pattern, connect_to_site resolves any URL |
+| R001 | core-capability | validated | M001/S01 | none | M001 — zero-config auth, 3 unit tests, server starts without env vars |
+| R002 | core-capability | validated | M001/S01 | none | M001 — discoverTenantId with 6 mock-fetch tests |
+| R003 | primary-user-loop | validated | M001/S01 | none | M001 — device code flow implemented, code path tested |
+| R004 | quality-attribute | validated | M001/S01 | none | M001 — MSAL cache plugin for ~/.sharepoint-mcp-cache.json |
+| R005 | operability | validated | M001/S01 | none | M001 — disconnect tool registered and handler tested |
+| R006 | primary-user-loop | validated | M001/S02 | none | M001 — connect_to_site, list_my_sites, search_sites registered and tested |
+| R007 | primary-user-loop | validated | M001/S02 | none | M001 — stateless siteId pattern, connect_to_site resolves any URL |
 | R008 | core-capability | validated | M001/S03 | none | S03 — 7 mock tests, all page tools delegate correctly |
 | R009 | core-capability | validated | M001/S03 | none | S03 — 3 mock tests, layout tools delegate correctly |
 | R010 | core-capability | validated | M001/S03 | none | S03 — 6 mock tests, all web part types delegate correctly |
 | R011 | core-capability | validated | M001/S03 | none | S03 — 4 mock tests, SP REST nav tools delegate correctly |
 | R012 | core-capability | validated | M001/S03 | none | S03 — 2 mock tests, branding tools delegate correctly |
-| R013 | launchability | active | M001/S04 | none | unmapped |
-| R014 | constraint | validated | M001/S01 | M001/S04 | S01 grep |
-| R015 | failure-visibility | validated | M001/S04 | M001/S01 | S04 — 16 tests prove actionable error messages |
-| R016 | continuity | deferred | none | none | unmapped |
+| R013 | launchability | validated | M001/S04 | none | M001 — npm pack clean, server starts, metadata complete |
+| R014 | constraint | validated | M001/S01 | M001/S04 | S01 grep, S04 npm pack --dry-run |
+| R015 | failure-visibility | validated | M001/S04 | M001/S01 | M001 — 16 tests prove actionable error messages |
+| R016 | continuity | deferred | none | none | Documented as known limitation in README |
 | R017 | anti-feature | out-of-scope | none | none | n/a |
 | R018 | anti-feature | out-of-scope | none | none | n/a |
 
 ## Coverage Summary
 
-- Active requirements: 9
-- Mapped to slices: 9
-- Validated: 6
-- Unmapped active requirements: 0
-pe | none | none | n/a |
-| R018 | anti-feature | out-of-scope | none | none | n/a |
-
-## Coverage Summary
-
-- Active requirements: 9
-- Mapped to slices: 9
-- Validated: 6
+- Active requirements: 0
+- Validated requirements: 15
+- Deferred requirements: 1
+- Out of scope: 2
 - Unmapped active requirements: 0
