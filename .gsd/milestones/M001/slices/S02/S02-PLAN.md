@@ -43,7 +43,7 @@
 
 ## Tasks
 
-- [ ] **T01: Translate tool descriptions to English and add `list_my_sites`** `est:25m`
+- [x] **T01: Translate tool descriptions to English and add `list_my_sites`** `est:25m`
   - Why: German descriptions make the MCP server unusable for non-German speakers. `list_my_sites` is a trivial wrapper that pairs naturally with this cleanup pass — both are mechanical changes to `tools.js`.
   - Files: `src/tools.js`
   - Do: Translate all 22 German tool descriptions to clear English. Add `list_my_sites` tool that calls `client.listSites("")` (which hits `/me/followedSites`) with no parameters, returns array of `{id, name, url, description}`. Keep tool registration order logical: site tools grouped together.

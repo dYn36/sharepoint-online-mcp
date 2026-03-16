@@ -64,6 +64,12 @@ PID=$!; sleep 1; kill $PID 2>/dev/null  # starts without error
 node --test tests/auth.test.js && node --test tests/client.test.js  # no regressions
 ```
 
+## Observability Impact
+
+- **Tool descriptions**: MCP `tools/list` protocol message now returns English descriptions for all 24 tools — inspectable by any MCP client.
+- **`list_my_sites` errors**: On failure, returns `isError: true` with `"Error listing followed sites: <message>"` — the error message includes the upstream Graph API error for diagnosis.
+- **No new logs or status endpoints**: This task is a translation pass + trivial tool addition; no runtime observability surfaces beyond the existing MCP protocol.
+
 ## Inputs
 
 - `src/tools.js` — current state with 23 tool registrations, 22 with German descriptions, 1 English (`disconnect`)
