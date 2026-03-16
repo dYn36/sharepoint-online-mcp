@@ -31,7 +31,20 @@ registerTools(server, client, auth);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  process.stderr.write("\n");
   process.stderr.write("🚀 SharePoint Online MCP Server started (stdio)\n");
+  process.stderr.write("\n");
+  process.stderr.write("   This server communicates via MCP protocol over stdin/stdout.\n");
+  process.stderr.write("   It is designed to be used with an MCP client like Claude Desktop.\n");
+  process.stderr.write("\n");
+  process.stderr.write("   📋 Claude Desktop config (~/.claude/claude_desktop_config.json):\n");
+  process.stderr.write("\n");
+  process.stderr.write('      { "mcpServers": { "sharepoint": { "command": "npx", "args": ["sharepoint-online-mcp"] } } }\n');
+  process.stderr.write("\n");
+  process.stderr.write("   Once connected, ask Claude to search for a SharePoint site to get started.\n");
+  process.stderr.write("   Authentication happens automatically on first use (device code flow).\n");
+  process.stderr.write("\n");
+  process.stderr.write("   Waiting for MCP client connection...\n");
 }
 
 main().catch((err) => {
