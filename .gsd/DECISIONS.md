@@ -13,3 +13,6 @@
 | 005 | 2026-03-16 | dist | Package name | `sharepoint-online-mcp` | User specified. Distinguishes from on-prem SharePoint. | No |
 | 006 | 2026-03-16 | arch | Language / build step | Plain JavaScript ESM, no TypeScript, no build step | Matches existing codebase. npx-ready without compilation. Simpler distribution. | Yes |
 | 007 | 2026-03-16 | auth | Token scope strategy | Request `https://{tenant}.sharepoint.com/.default` for SP REST and `https://graph.microsoft.com/.default` for Graph | Well-known client IDs may not support fine-grained scope requests. `.default` requests whatever scopes are pre-consented for the client. | Yes — may need to test specific scope lists |
+| 008 | 2026-03-16 | auth | Fetch implementation for discoverTenantId | Node built-in global fetch (not node-fetch) | Node 25 has stable global fetch. Fewer deps, injectable fetchFn param for testing. | No |
+| 009 | 2026-03-16 | test | Test framework | node:test + node:assert/strict (Node built-in) | Zero dependencies, matches no-build-step constraint, fully supported on Node 25. | No |
+| 010 | 2026-03-16 | auth | Testability pattern for network calls | Injectable fetchFn parameter with default to global fetch | Avoids global mock pollution, works cleanly with ESM, enables parallel test execution. | No |

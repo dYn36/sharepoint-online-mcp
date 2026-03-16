@@ -64,6 +64,13 @@ Rewrite `src/auth.js` from a parameterized auth class (requires `clientId`/`tena
 - `node --test tests/auth.test.js` — all tests pass
 - `node -e "import('./src/auth.js').then(m => { console.log(typeof m.SharePointAuth, typeof m.discoverTenantId) })"` — prints `function function`
 
+## Observability Impact
+
+- **stderr auth state transitions**: Silent acquisition failures now emit `[auth] Silent token acquisition failed for {resource}: {message}` to stderr. Device code prompt is English, transient, includes verification URI and user code.
+- **Error messages include context**: All `discoverTenantId` errors include the domain attempted, HTTP status or network error detail. Scope-related failures will surface the resource URL.
+- **Inspection**: `~/.sharepoint-mcp-cache.json` existence confirms prior successful auth. `buildScopes` and `discoverTenantId` are pure/near-pure and directly testable.
+- **Test surface**: `node --test tests/auth.test.js` — 12 tests covering scope construction (3), tenant discovery happy/error paths (6), class construction smoke tests (3).
+
 ## Inputs
 
 - `src/auth.js` — current 95-line auth module, the starting point for refactor

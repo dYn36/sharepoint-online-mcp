@@ -9,6 +9,10 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "auth": "node src/auth-cli.js"
+    "auth": "node src/auth-cli.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^5.1.0"
   }
 }

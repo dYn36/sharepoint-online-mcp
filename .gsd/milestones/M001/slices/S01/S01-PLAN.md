@@ -43,7 +43,7 @@
 
 ## Tasks
 
-- [ ] **T01: Refactor auth.js to zero-config multi-resource auth engine with unit tests** `est:1h`
+- [x] **T01: Refactor auth.js to zero-config multi-resource auth engine with unit tests** `est:1h`
   - Why: This is the core risk-retiring task. Proves well-known client ID pattern works, tenant discovery parses correctly, per-resource scope construction is correct. Unblocks all downstream work.
   - Files: `src/auth.js`, `tests/auth.test.js`, `package.json`
   - Do: (1) Add `test` script to package.json using `node --test`. (2) Rewrite `auth.js`: remove constructor params, hardcode Office client ID, add `discoverTenantId(domain)` that calls OpenID config endpoint and parses tenant GUID from `token_endpoint`, change `getAccessToken(scopes)` → `getAccessToken(resource)` that builds `["{resource}/.default"]` scopes, use `common` authority. (3) Write `tests/auth.test.js` with unit tests: tenant discovery URL construction and GUID parsing (mock fetch), scope construction for Graph and SP resources, auth class instantiates without args, error handling for failed tenant discovery.
