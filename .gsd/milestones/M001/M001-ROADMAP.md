@@ -53,7 +53,7 @@ This milestone is complete only when all are true:
 
 - [x] **S01: Zero-Config Auth Engine** `risk:high` `depends:[]`
   > After this: Server starts without env vars, device code authenticates against a real tenant using well-known client ID, token is cached, Graph API call succeeds — proven against live Azure AD
-- [ ] **S02: Site Discovery & Connection Tools** `risk:medium` `depends:[S01]`
+- [x] **S02: Site Discovery & Connection Tools** `risk:medium` `depends:[S01]`
   > After this: Claude can search sites, resolve a site from URL with auto tenant discovery, list followed sites, and disconnect/reconnect — all via MCP tools against live SharePoint
 - [ ] **S03: Tool Validation & Dual-Audience Tokens** `risk:medium` `depends:[S02]`
   > After this: All 20+ existing tools (pages, layout, web parts, navigation, branding) work with the new auth layer — both Graph API and SP REST API calls succeed with correct token audiences

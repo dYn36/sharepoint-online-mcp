@@ -65,8 +65,8 @@
 - Source: user
 - Primary owning slice: M001/S02
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Existing `search_sites` and `get_site_by_url` tools partially cover this. Need to add a `connect` flow that combines URL → tenant discovery → auth → site resolution.
+- Validation: S02 — `connect_to_site` tool registered and tested (URL parsing 7/7 tests), `list_my_sites` tool registered, `search_sites` pre-existing. Live validation deferred to milestone UAT.
+- Notes: `connect_to_site` chains URL parsing → tenant discovery → auth → site resolution. `list_my_sites` calls `/me/followedSites`. `search_sites` was already present.
 
 ### R007 — Multi-Site Support
 - Class: primary-user-loop
@@ -76,8 +76,8 @@
 - Source: user
 - Primary owning slice: M001/S02
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Current architecture already supports this — tools take siteId as parameter. Need to make site context management ergonomic.
+- Validation: S02 — `connect_to_site` resolves any site by URL without session state; all tools accept siteId as parameter. Live multi-site validation deferred to milestone UAT.
+- Notes: No "current site" concept — each tool call takes siteId explicitly. `connect_to_site` returns siteId for use in downstream calls.
 
 ### R008 — Page CRUD
 - Class: core-capability
@@ -213,8 +213,8 @@
 | R003 | primary-user-loop | active | M001/S01 | none | unmapped |
 | R004 | quality-attribute | active | M001/S01 | none | unmapped |
 | R005 | operability | active | M001/S01 | none | unmapped |
-| R006 | primary-user-loop | active | M001/S02 | none | unmapped |
-| R007 | primary-user-loop | active | M001/S02 | none | unmapped |
+| R006 | primary-user-loop | active | M001/S02 | none | S02 — tools registered, URL parsing tested |
+| R007 | primary-user-loop | active | M001/S02 | none | S02 — stateless siteId pattern, connect_to_site resolves any URL |
 | R008 | core-capability | active | M001/S03 | none | unmapped |
 | R009 | core-capability | active | M001/S03 | none | unmapped |
 | R010 | core-capability | active | M001/S03 | none | unmapped |

@@ -10,7 +10,7 @@ A user runs `npx sharepoint-online-mcp` with zero configuration, authenticates v
 
 ## Current State
 
-Auth layer refactored to zero-config. Server starts with `node src/index.js` — no env vars, no config files. Uses Microsoft Office well-known client ID for device code flow authentication. Token caching to `~/.sharepoint-mcp-cache.json` for cross-restart persistence. Dual-audience token routing: Graph API and SP REST API get per-resource tokens. 18 unit tests passing. Disconnect MCP tool available. Package renamed to `sharepoint-online-mcp` with all runtime dependencies declared. Site discovery tools and full tool validation pending (S02-S03).
+Auth layer refactored to zero-config. Server starts with `node src/index.js` — no env vars, no config files. Uses Microsoft Office well-known client ID for device code flow authentication. Token caching to `~/.sharepoint-mcp-cache.json` for cross-restart persistence. Dual-audience token routing: Graph API and SP REST API get per-resource tokens. 25 MCP tools registered, all with English descriptions. Site discovery tools added: `connect_to_site` (URL → tenant discovery → site resolution), `list_my_sites` (followed sites). 25 unit tests passing across 3 test files. Tool validation against live SharePoint and npm packaging pending (S03–S04).
 
 ## Architecture / Key Patterns
 
@@ -19,9 +19,9 @@ Auth layer refactored to zero-config. Server starts with `node src/index.js` —
 - **Auth:** MSAL Node (`@azure/msal-node`) with Device Code Flow
 - **API:** Microsoft Graph v1.0 + Beta for pages/layout, SharePoint REST API for navigation/branding
 - **Structure:**
-  - `src/auth.js` — MSAL wrapper, token cache, device code flow
-  - `src/client.js` — Graph API + SP REST API client
-  - `src/tools.js` — 20+ MCP tool definitions (zod schemas + handlers)
+  - `src/auth.js` — MSAL wrapper, token cache, device code flow, tenant discovery
+  - `src/client.js` — Graph API + SP REST API client with per-resource token routing
+  - `src/tools.js` — 25 MCP tool definitions (zod schemas + handlers), `parseSharePointUrl` export
   - `src/index.js` — Server entrypoint, stdio transport
   - `src/auth-cli.js` — Standalone auth test CLI
 
